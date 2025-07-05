@@ -70,7 +70,7 @@ func (r *PodReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 			"--db-repository", "public.ecr.aws/aquasecurity/trivy-db",
 			"--java-db-repository", "public.ecr.aws/aquasecurity/trivy-java-db",
 			// "--output", sbomFile.Name(),
-
+			container.Image,
 		})
 		if err := app.ExecuteContext(ctx); err != nil {
 			return ctrl.Result{}, fmt.Errorf("failed to execute trivy: %w", err)
