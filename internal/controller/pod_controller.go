@@ -23,7 +23,9 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
 )
 
 // PodReconciler reconciles a Pod object
@@ -54,6 +56,30 @@ func (r *PodReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 	}
 
 	log.Log.Info("Detect the pod", "name", pod.Name, "namespace", pod.Namespace)
+	for _, container := range pod.Spec.Containers {
+		log.Log.Info("Container", "name", container.Name, "image", container.Image, "imagePullPolicy", container.ImagePullPolicy)
+	}
+
+	for _, image := range pod.Spec.ImagePullSecrets {
+		log.Log.Info("ImagePullSecret", "name", image.Name)
+	}
+
+	// trigger the event
+	// app := trivyCommands.NewApp()
+	// app.SetArgs([]string{
+	// 	"image",
+	// 	"--cache-dir", h.workDir,
+	// 	"--format", "spdx-json",
+	// 	"--db-repository", "public.ecr.aws/aquasecurity/trivy-db",
+	// 	"--java-db-repository", "public.ecr.aws/aquasecurity/trivy-java-db",
+	// 	// "--output", sbomFile.Name(),
+	// 	fmt.Sprintf(
+	// 		"%s/%s@%s",
+	// 		image.GetImageMetadata().RegistryURI,
+	// 		image.GetImageMetadata().Repository,
+	// 		image.GetImageMetadata().Digest,
+	// 	),
+	// })
 
 	return ctrl.Result{}, nil
 }
@@ -62,5 +88,12 @@ func (r *PodReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 func (r *PodReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&corev1.Pod{}).
+		WithEventFilter(predicate.Funcs{
+			CreateFunc:  func(e event.CreateEvent) bool { return true },
+			UpdateFunc:  func(e event.UpdateEvent) bool { return true },
+			DeleteFunc:  func(e event.DeleteEvent) bool { return false },
+			GenericFunc: func(e event.GenericEvent) bool { return true },
+		}).
 		Complete(r)
+
 }
