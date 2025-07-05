@@ -18,6 +18,7 @@ package controller
 
 import (
 	"context"
+	"fmt"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -26,6 +27,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
+
+	trivyCommands "github.com/aquasecurity/trivy/pkg/commands"
 )
 
 // PodReconciler reconciles a Pod object
@@ -58,28 +61,27 @@ func (r *PodReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 	log.Log.Info("Detect the pod", "name", pod.Name, "namespace", pod.Namespace)
 	for _, container := range pod.Spec.Containers {
 		log.Log.Info("Container", "name", container.Name, "image", container.Image, "imagePullPolicy", container.ImagePullPolicy)
+		// trigger the event
+		app := trivyCommands.NewApp()
+		app.SetArgs([]string{
+			"image",
+			// "--cache-dir", h.workDir,
+			"--format", "spdx-json",
+			"--db-repository", "public.ecr.aws/aquasecurity/trivy-db",
+			"--java-db-repository", "public.ecr.aws/aquasecurity/trivy-java-db",
+			// "--output", sbomFile.Name(),
+
+		})
+		if err := app.ExecuteContext(ctx); err != nil {
+			return ctrl.Result{}, fmt.Errorf("failed to execute trivy: %w", err)
+		}
+
+		log.Log.Info("SBOM generated", "image", container.Image, "namespace", pod.Namespace)
 	}
 
 	for _, image := range pod.Spec.ImagePullSecrets {
 		log.Log.Info("ImagePullSecret", "name", image.Name)
 	}
-
-	// trigger the event
-	// app := trivyCommands.NewApp()
-	// app.SetArgs([]string{
-	// 	"image",
-	// 	"--cache-dir", h.workDir,
-	// 	"--format", "spdx-json",
-	// 	"--db-repository", "public.ecr.aws/aquasecurity/trivy-db",
-	// 	"--java-db-repository", "public.ecr.aws/aquasecurity/trivy-java-db",
-	// 	// "--output", sbomFile.Name(),
-	// 	fmt.Sprintf(
-	// 		"%s/%s@%s",
-	// 		image.GetImageMetadata().RegistryURI,
-	// 		image.GetImageMetadata().Repository,
-	// 		image.GetImageMetadata().Digest,
-	// 	),
-	// })
 
 	return ctrl.Result{}, nil
 }
