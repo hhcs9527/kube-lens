@@ -69,7 +69,7 @@ func (r *PodReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 			"--format", "spdx-json",
 			"--db-repository", "public.ecr.aws/aquasecurity/trivy-db",
 			"--java-db-repository", "public.ecr.aws/aquasecurity/trivy-java-db",
-			// "--output", sbomFile.Name(),
+			"--output", "spdx.json",
 			container.Image,
 		})
 		if err := app.ExecuteContext(ctx); err != nil {
