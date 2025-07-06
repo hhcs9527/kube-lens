@@ -64,13 +64,7 @@ func (r *PodReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 		// trigger the event
 		app := trivyCommands.NewApp()
 		app.SetArgs([]string{
-			"image",
-			// "--cache-dir", h.workDir,
-			"--format", "spdx-json",
-			"--db-repository", "public.ecr.aws/aquasecurity/trivy-db",
-			"--java-db-repository", "public.ecr.aws/aquasecurity/trivy-java-db",
-			"--output", "/tmp/spdx.json",
-			container.Image,
+			"version",
 		})
 		if err := app.ExecuteContext(ctx); err != nil {
 			return ctrl.Result{}, fmt.Errorf("failed to execute trivy: %w", err)
